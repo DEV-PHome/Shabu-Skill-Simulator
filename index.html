@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shabu Skill Assessment Dashboard V5.1</title>
+<style>
+/* =========================================
+   ส่วนที่ 1: ตั้งค่ารูปภาพ (Local Files)
+   ========================================= */
+:root {
+  --img-pot: url('Pot.png'); 
+  
+  /* ภาพเนื้อวัว 5 ระดับ */
+  --img-beef-raw: url('MeatRaw.png');
+  --img-beef-rare: url('MeatRare.png');
+  --img-beef-med: url('MeatGood.png');
+  --img-beef-well: url('MeatWell.png');  
+  --img-beef-over: url('MeatOver.png');
+
+  /* ภาพหมู 5 ระดับ */
+  --img-pork-raw: url('PorkRaw.png');
+  --img-pork-rare: url('PorkRare.png');
+  --img-pork-good: url('PorkGood.png');
+  --img-pork-well: url('PorkWell.png');
+  --img-pork-over: url('PorkOver.png');
+
+  /* ภาพกุ้ง 5 ระดับ */
+  --img-shrimp-raw: url('ShrimpRaw.png');
+  --img-shrimp-rare: url('ShrimpRare.png');
+  --img-shrimp-good: url('ShrimpGood.png');
+  --img-shrimp-well: url('ShrimpWell.png');
+  --img-shrimp-over: url('ShrimpOver.png');
+}
+
+/* =========================================
+   ส่วนที่ 2: โครงสร้าง UI / Dashboard
+   ========================================= */
+body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #e9ecef; margin: 0; padding: 20px; display: flex; justify-content: center; }
+.dashboard { width: 1150px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: grid; grid-template-columns: 280px 1fr 260px; gap: 20px; }
+
+.header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: white; padding: 15px 20px; border-radius: 8px; }
+.target-box { font-size: 1.2em; font-weight: bold; color: #f1c40f; }
+.score-box { font-size: 1.5em; font-weight: bold; }
+
+.panel-left, .panel-right { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; }
+h3 { margin-top: 0; color: #343a40; font-size: 1.1em; border-bottom: 2px solid #dee2e6; padding-bottom: 5px; }
+.btn-group button { display: block; width: 100%; padding: 12px; margin-bottom: 8px; font-size: 0.95em; cursor: pointer; border: none; border-radius: 5px; background: #e0e0e0; transition: 0.2s; font-weight: bold; }
+.btn-group button:hover { background: #d0d0d0; }
+.btn-group button.active { background: #e74c3c; color: white; }
+
+.toggle-btn { width: 100%; padding: 10px; margin-bottom: 15px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+.toggle-btn.exam-mode { background: #e67e22; }
+
+.info-display { margin-bottom: 15px; padding: 15px; background: #fff; border-radius: 5px; border: 1px dashed #ccc; transition: 0.3s; font-size: 0.95em; line-height: 1.5; }
+
+.panel-center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+.pot-container { width: 520px; height: 520px; border-radius: 50%; margin: 10px auto; position: relative; overflow: hidden; background-image: var(--img-pot); background-size: 100% 100%; background-position: center; border: 12px solid #bdc3c7; box-shadow: inset 0 0 25px rgba(0,0,0,0.6); }
+
+.pot-overlay { position: absolute; inset: 0; background: transparent; pointer-events: none; transition: 1s; backdrop-filter: blur(0px); border-radius: 50%; }
+.pot-overlay.hot { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(1.5px); }
+.pot-overlay.boil { background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(3.5px); }
+
+.steam { position: absolute; width: 45px; height: 45px; border-radius: 50%; background: rgba(255,255,255,0.5); filter: blur(6px); animation: up 2.5s linear infinite; }
+@keyframes up { from { transform: translateY(50px) scale(0.8); opacity: 0.7; } to { transform: translateY(-350px) scale(2.2); opacity: 0; } }
+
+.bubble { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.8); animation: rise 0.8s linear infinite; }
+@keyframes rise { from { transform: translateY(30px) scale(0.8); opacity: 1; } to { transform: translateY(-250px) scale(1.4); opacity: 0; } }
+
+#food-item { width: 300px; height: 300px; position: absolute; top: 110px; left: 110px; background-size: contain; background-repeat: no-repeat; background-position: center; transition: 0.3s; display: none; }
+
+.food-btn { display: inline-block; width: 48%; padding: 10px 0; margin-bottom: 10px; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; background: white; font-weight: bold; }
+.food-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.action-btn { width: 100%; padding: 15px; background: #27ae60; color: white; font-size: 1.2em; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.action-btn:hover { background: #2ecc71; }
+.action-btn:disabled { background: #95a5a6; cursor: not-allowed; box-shadow: none; }
+
+.history-log { margin-top: 15px; max-height: 200px; overflow-y: auto; font-size: 0.9em; }
+.log-item { padding: 8px; border-bottom: 1px solid #ddd; }
+.log-item.perfect { border-left: 4px solid #27ae60; background: #eafaf1; }
+.log-item.partial { border-left: 4px solid #3498db; background: #ebf5fb; }
+.log-item.over { border-left: 4px solid #f39c12; background: #fef5e7; }
+.log-item.raw { border-left: 4px solid #e74c3c; background: #fdedec; }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+  <div class="header">
+    <div class="target-box">ออร์เดอร์ปัจจุบัน: <span id="current-target" style="color:#fff;">รอรับออร์เดอร์...</span></div>
+    <div class="score-box">คะแนนรวม: <span id="total-score">0</span></div>
+  </div>
+
+  <div class="panel-left">
+    <h3>การควบคุมอุณหภูมิ</h3>
+    
+    <button class="toggle-btn" id="btn-toggle-mode" onclick="toggleMode()">สถานะ: โหมดเรียนรู้ (แสดงข้อมูล)</button>
+    
+    <div class="info-display" id="info-display">
+      <b>วิทยาศาสตร์ความร้อน:</b><br>
+      สถานะน้ำ: <span id="state" style="font-weight:bold; color:#c0392b;">COLD</span><br>
+      อุณหภูมิน้ำ: <span id="temp" style="font-weight:bold;">32.0</span> °C<br>
+      <div id="meat-temp-box" style="display:none; margin-top:8px; padding-top:8px; border-top:1px dashed #ccc;">
+        อุณหภูมิแกนกลางเนื้อ: <br><span id="food-temp" style="font-weight:bold; color:#2980b9; font-size:1.1em;">32.0</span> °C
+      </div>
+    </div>
+
+    <div class="btn-group" id="power-btns">
+      <button onclick="setPower(1200)" id="btn-1200">1200W (เดือดพล่าน 100°C)</button>
+      <button onclick="setPower(1000)" id="btn-1000">1000W (เดือด 90°C)</button>
+      <button onclick="setPower(800)" id="btn-800">800W (ร้อนจัด 80°C)</button>
+      <button onclick="setPower(600)" id="btn-600">600W (ร้อน 65°C)</button>
+      <button onclick="setPower(400)" id="btn-400">400W (อุ่น 50°C)</button>
+      <button onclick="setPower(0)" id="btn-0" class="active">ปิดไฟ</button>
+    </div>
+  </div>
+
+  <div class="panel-center">
+    <div class="pot-container" id="pot">
+      <div class="pot-overlay" id="pot-overlay"></div>
+      <div id="steam-container"></div>
+      <div id="food-item"></div>
+    </div>
+    <div id="food-status-text" style="font-weight:bold; height:20px; margin-top:10px;"></div>
+  </div>
+
+  <div class="panel-right">
+    <h3>เลือกวัตถุดิบลงหม้อ</h3>
+    <div>
+      <button class="food-btn" id="btn-beef" onclick="addFood('beef', 'เนื้อวัว')">เนื้อวัว</button>
+      <button class="food-btn" id="btn-pork" onclick="addFood('pork', 'หมู')">เนื้อหมู</button>
+      <button class="food-btn" id="btn-shrimp" onclick="addFood('shrimp', 'กุ้ง')" style="width:100%;">กุ้ง</button>
+    </div>
+    <button class="action-btn" id="btn-scoop" onclick="scoopUp()" disabled>ตักขึ้น (Scoop Up)</button>
+    
+    <h3 style="margin-top:20px;">ประวัติการประเมินทักษะ</h3>
+    <div class="history-log" id="history-log"></div>
+  </div>
+</div>
+
+<script>
+let temp = 32.0;
+let power = 0;
+let score = 0;
+let isExamMode = false;
+
+let activeFood = null; 
+let activeFoodName = '';
+let foodInternalTemp = 32.0; 
+let currentDoneness = ''; 
+let donenessLabel = '';
+
+let orders = [
+  { type: 'beef', name: 'เนื้อวัว', target: 'perfect', label: 'Medium (สุกกำลังดี 58-64°C)' },
+  { type: 'pork', name: 'เนื้อหมู', target: 'perfect', label: 'สุกปลอดภัย 100% (63-69°C)' },
+  { type: 'shrimp', name: 'กุ้ง', target: 'perfect', label: 'สุกกำลังดี (55-64°C)' }
+];
+let currentOrder = null;
+
+function init() {
+  generateOrder();
+  setInterval(physicsLoop, 100); 
+}
+
+function toggleMode() {
+  isExamMode = !isExamMode;
+  let btn = document.getElementById('btn-toggle-mode');
+  let info = document.getElementById('info-display');
+  let meatTemp = document.getElementById('meat-temp-box');
+  
+  if (isExamMode) {
+    btn.innerText = 'สถานะ: โหมดประเมิน (ซ่อนข้อมูล)';
+    btn.classList.add('exam-mode');
+    info.style.display = 'none';
+    meatTemp.style.display = 'none'; // ซ่อนอุณหภูมิแกนกลางเนื้อทันทีเมื่อเข้าโหมดประเมิน
+  } else {
+    btn.innerText = 'สถานะ: โหมดเรียนรู้ (แสดงข้อมูล)';
+    btn.classList.remove('exam-mode');
+    info.style.display = 'block';
+    if (activeFood) {
+      meatTemp.style.display = 'block'; // แสดงอุณหภูมิแกนกลางเนื้อหากมีวัตถุดิบอยู่ในหม้อ
+    }
+  }
+}
+
+function generateOrder() {
+  let rand = Math.floor(Math.random() * orders.length);
+  currentOrder = orders[rand];
+  document.getElementById('current-target').innerHTML = `${currentOrder.name} - ${currentOrder.label}`;
+}
+
+function setPower(v) {
+  power = v;
+  document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + v).classList.add('active');
+}
+
+function addFood(type, name) {
+  if (activeFood) return; 
+  activeFood = type;
+  activeFoodName = name;
+  foodInternalTemp = 32.0; 
+  
+  document.querySelectorAll('.food-btn').forEach(b => b.disabled = true);
+  document.getElementById('btn-scoop').disabled = false;
+  
+  // ตรวจสอบสถานะโหมดประเมินก่อนเปิดกล่องแสดงอุณหภูมิแกนกลางเนื้อ
+  if (!isExamMode) {
+    document.getElementById('meat-temp-box').style.display = 'block';
+  } else {
+    document.getElementById('meat-temp-box').style.display = 'none';
+  }
+  
+  let el = document.getElementById('food-item');
+  el.style.display = 'block';
+  el.style.transform = 'scale(1)';
+  
+  updateFoodVisuals();
+}
+
+function heatState() {
+  if(temp < 50) return 'COLD (น้ำอุณหภูมิห้อง)';
+  if(temp < 65) return 'WARM (น้ำอุ่น)';
+  if(temp < 80) return 'HOT (น้ำร้อน ฆ่าเชื้อแบคทีเรีย)';
+  if(temp < 92) return 'SIMMER (เดือดปุดๆ เหมาะแก่การลวก)';
+  return 'BOILING (เดือดพล่าน โปรตีนหดเกร็งรุนแรง)';
+}
+
+function updateFoodVisuals() {
+  if (!activeFood) return;
+  
+  let el = document.getElementById('food-item');
+  document.getElementById('food-temp').textContent = foodInternalTemp.toFixed(1);
+  
+  if (activeFood === 'beef') {
+    if (foodInternalTemp < 54) {
+      el.style.backgroundImage = "var(--img-beef-raw)";
+      currentDoneness = 'raw'; donenessLabel = 'ดิบ (< 54°C)';
+    } else if (foodInternalTemp >= 54 && foodInternalTemp < 58) {
+      el.style.backgroundImage = "var(--img-beef-rare)";
+      currentDoneness = 'rare'; donenessLabel = 'เริ่มสุก (Medium Rare 54-57°C)';
+    } else if (foodInternalTemp >= 58 && foodInternalTemp < 65) {
+      el.style.backgroundImage = "var(--img-beef-med)";
+      currentDoneness = 'perfect'; donenessLabel = 'สุกกำลังดี (Medium 58-64°C)';
+    } else if (foodInternalTemp >= 65 && foodInternalTemp < 75) {
+      el.style.backgroundImage = "var(--img-beef-well)";
+      currentDoneness = 'well'; donenessLabel = 'สุกมาก (Well Done 65-74°C)';
+    } else {
+      el.style.backgroundImage = "var(--img-beef-over)";
+      currentDoneness = 'over'; donenessLabel = 'สุกเกินไปจนแห้งเหนียว (≥ 75°C)';
+      if (temp >= 95) el.style.transform = 'scale(0.85)';
+    }
+  }
+
+  if (activeFood === 'pork') {
+    if (foodInternalTemp < 54) {
+      el.style.backgroundImage = "var(--img-pork-raw)";
+      currentDoneness = 'raw'; donenessLabel = 'ดิบ (อันตราย < 54°C)';
+    } else if (foodInternalTemp >= 54 && foodInternalTemp < 63) {
+      el.style.backgroundImage = "var(--img-pork-rare)";
+      currentDoneness = 'rare'; donenessLabel = 'เริ่มสุกแต่ยังไม่ปลอดภัย (54-62°C)';
+    } else if (foodInternalTemp >= 63 && foodInternalTemp < 70) {
+      el.style.backgroundImage = "var(--img-pork-good)";
+      currentDoneness = 'perfect'; donenessLabel = 'สุกปลอดภัย 100% (63-69°C)';
+    } else if (foodInternalTemp >= 70 && foodInternalTemp < 80) {
+      el.style.backgroundImage = "var(--img-pork-well)";
+      currentDoneness = 'well'; donenessLabel = 'สุกมากเริ่มแห้ง (70-79°C)';
+    } else {
+      el.style.backgroundImage = "var(--img-pork-over)";
+      currentDoneness = 'over'; donenessLabel = 'สุกเกินไปจนแข็งกระด้าง (≥ 80°C)';
+      if (temp >= 95) el.style.transform = 'scale(0.85)';
+    }
+  }
+
+  if (activeFood === 'shrimp') {
+    if (foodInternalTemp < 50) {
+      el.style.backgroundImage = "var(--img-shrimp-raw)";
+      currentDoneness = 'raw'; donenessLabel = 'ดิบ (< 50°C)';
+    } else if (foodInternalTemp >= 50 && foodInternalTemp < 55) {
+      el.style.backgroundImage = "var(--img-shrimp-rare)";
+      currentDoneness = 'rare'; donenessLabel = 'เริ่มสุก (50-54°C)';
+    } else if (foodInternalTemp >= 55 && foodInternalTemp < 65) {
+      el.style.backgroundImage = "var(--img-shrimp-good)";
+      currentDoneness = 'perfect'; donenessLabel = 'สุกกำลังดี (55-64°C)';
+    } else if (foodInternalTemp >= 65 && foodInternalTemp < 75) {
+      el.style.backgroundImage = "var(--img-shrimp-well)";
+      currentDoneness = 'well'; donenessLabel = 'สุกมาก เริ่มหดแน่น (65-74°C)';
+    } else {
+      el.style.backgroundImage = "var(--img-shrimp-over)";
+      currentDoneness = 'over'; donenessLabel = 'สุกเกินไป หดเป็นรูปตัว O (≥ 75°C)';
+    }
+  }
+  
+  if(isExamMode) {
+    document.getElementById('food-status-text').innerText = 'กำลังประเมินด้วยสายตา...';
+  } else {
+    document.getElementById('food-status-text').innerText = donenessLabel;
+  }
+}
+
+function scoopUp() {
+  if (!activeFood) return;
+  
+  let earned = 0;
+  let logClass = '';
+  let feedback = '';
+
+  if (activeFood !== currentOrder.type) {
+    earned = -2;
+    logClass = 'over';
+    feedback = `ผิดออร์เดอร์ (สั่ง ${currentOrder.name})`;
+  } else {
+    if (currentDoneness === 'perfect') {
+      earned = 10; logClass = 'perfect'; feedback = 'ทำได้สมบูรณ์แบบ อุณหภูมิเป๊ะ!';
+    } else if (currentDoneness === 'well') {
+      earned = 5; logClass = 'partial'; feedback = 'สุกมากไปนิด เนื้อสัมผัสเริ่มแห้ง';
+    } else if (currentDoneness === 'rare') {
+      if(activeFood === 'pork') {
+        earned = -5; logClass = 'raw'; feedback = 'เนื้อหมูแกนกลางยังไม่ถึง 63°C เสี่ยงอันตราย!';
+      } else {
+        earned = 4; logClass = 'partial'; feedback = 'เนื้อดิบเกินไปเล็กน้อย';
+      }
+    } else if (currentDoneness === 'over') {
+      earned = 2; logClass = 'over'; feedback = 'อุณหภูมิแกนกลางสูงเกินไป เนื้อกระด้าง';
+    } else if (currentDoneness === 'raw') {
+      earned = -5; logClass = 'raw'; feedback = 'วัตถุดิบยังดิบอยู่ ไม่สามารถรับประทานได้';
+    }
+  }
+
+  score += earned;
+  document.getElementById('total-score').innerText = score;
+
+  let logDiv = document.getElementById('history-log');
+  let entry = document.createElement('div');
+  entry.className = `log-item ${logClass}`;
+  let sign = earned > 0 ? '+' : '';
+  entry.innerHTML = `<b>${activeFoodName}</b> (${donenessLabel}) | ${feedback} <b>[${sign}${earned}]</b>`;
+  logDiv.prepend(entry);
+
+  activeFood = null;
+  document.getElementById('food-item').style.display = 'none';
+  document.getElementById('food-status-text').innerText = '';
+  document.getElementById('meat-temp-box').style.display = 'none';
+  document.querySelectorAll('.food-btn').forEach(b => b.disabled = false);
+  document.getElementById('btn-scoop').disabled = true;
+  
+  generateOrder();
+}
+
+function physicsLoop() {
+  let targetTemp = 32; 
+  if (power === 1200) targetTemp = 100;
+  else if (power === 1000) targetTemp = 90;
+  else if (power === 800) targetTemp = 80;
+  else if (power === 600) targetTemp = 65;
+  else if (power === 400) targetTemp = 50;
+  else targetTemp = 32;
+
+  let rate = (power === 0) ? 0.01 : 0.04; 
+  temp += (targetTemp - temp) * rate;
+
+  temp = Math.max(32, Math.min(100, temp));
+  document.getElementById('temp').textContent = temp.toFixed(1);
+
+  let state = heatState();
+  document.getElementById('state').textContent = state;
+
+  let steamBox = document.getElementById('steam-container');
+  let overlay = document.getElementById('pot-overlay');
+  steamBox.innerHTML = '';
+  
+  overlay.classList.remove('hot', 'boil');
+  if(temp >= 90) {
+    overlay.classList.add('boil');
+  } else if(temp >= 65) {
+    overlay.classList.add('hot');
+  }
+
+  let cx = 260; 
+  let cy = 260; 
+  let maxRadius = 220; 
+
+  function appendInsidePot(element, count) {
+    let generated = 0;
+    while(generated < count) {
+      let r = Math.random() * maxRadius;
+      let theta = Math.random() * 2 * Math.PI;
+      let x = cx + r * Math.cos(theta) - 20; 
+      let y = cy + r * Math.sin(theta) - 20;
+
+      let clone = element.cloneNode(true);
+      clone.style.left = x + 'px';
+      clone.style.bottom = y + 'px';
+      steamBox.appendChild(clone);
+      generated++;
+    }
+  }
+
+  if(temp >= 65) {
+    let s = document.createElement('div');
+    s.className = 'steam';
+    appendInsidePot(s, 6);
+  }
+
+  if(temp >= 80) {
+    let b = document.createElement('div');
+    b.className = 'bubble';
+    b.style.width = '12px'; b.style.height = '12px';
+    appendInsidePot(b, 16);
+  }
+
+  if(temp >= 90) {
+    let b = document.createElement('div');
+    b.className = 'bubble';
+    b.style.width = (10 + Math.random() * 18) + 'px';
+    b.style.height = b.style.width;
+    appendInsidePot(b, 55);
+  }
+
+  if(activeFood) {
+    let heatTransferRate = 0.015; 
+    
+    if (temp > foodInternalTemp) {
+      foodInternalTemp += (temp - foodInternalTemp) * heatTransferRate;
+    } else if (temp < foodInternalTemp) {
+      foodInternalTemp -= (foodInternalTemp - temp) * (heatTransferRate / 2);
+    }
+    
+    updateFoodVisuals();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
