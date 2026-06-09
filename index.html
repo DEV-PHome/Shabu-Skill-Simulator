@@ -140,6 +140,17 @@ h3 { margin-top: 0; color: #343a40; font-size: 1.1em; border-bottom: 2px solid #
 </div>
 
 <script>
+ const preloadImagesList = [
+  'Pot.png',
+  'MeatRaw.png', 'MeatRare.png', 'MeatGood.png', 'MeatWell.png', 'MeatOver.png',
+  'PorkRaw.png', 'PorkRare.png', 'PorkGood.png', 'PorkWell.png', 'PorkOver.png',
+  'ShrimpRaw.png', 'ShrimpRare.png', 'ShrimpGood.png', 'ShrimpWell.png', 'ShrimpOver.png'
+];
+preloadImagesList.forEach(src => {
+  const img = new Image();
+  img.src = src;
+});
+   
 let temp = 32.0;
 let power = 0;
 let score = 0;
